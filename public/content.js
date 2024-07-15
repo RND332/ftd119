@@ -9,6 +9,7 @@ document.addEventListener('keydown', function (event) {
     if (event.ctrlKey && event.key === 'z') {
         event.preventDefault();
 
+
         chrome.runtime.sendMessage({ TwitterPostId: twitterPostId, TwitterImageId: twitterImageId, TwitterVideoSrc: twitterVideoSrc });
     }
 });
@@ -54,11 +55,11 @@ document.addEventListener('mousemove', function (event) {
             if (!element.parentElement) break;
             element = element.parentElement;
         }
-        
+
         if (element.getAttribute('data-testid') === 'videoPlayer') {
             const video = element.querySelector('video');
             const videoSrc = video.getAttribute('poster');
-            
+
             twitterVideoSrc = videoSrc;
         }
     } else {
@@ -71,10 +72,8 @@ document.addEventListener('mousemove', function (event) {
     const link = findLinkToTweet(hoveredElement);
 
     if (!link) return;
-    
-    const id = link.match(tweetStatusRegex)[0].replace('status/', '');
 
-    console.log('link', link, 'id', id);
+    const id = link.match(tweetStatusRegex)[0].replace('status/', '');
 
     if (link && id !== twitterPostId) {
         twitterPostId = id;
@@ -189,7 +188,7 @@ function findLinkToTweet(event, foundTweet = false) {
  */
 
 // definition of the tweet metadata we are interested in
-/** 
+/**
  * @typedef {object} TwitterAPIPostMetadata
  * @property {string} username
  * @property {string} tweetId

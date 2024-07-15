@@ -10,11 +10,12 @@ chrome.action.onClicked.addListener((tab) => {
 });
 
 // get message from content.js
-chrome.runtime.onMessage.addListener((message) => {
+chrome.runtime.onMessage.addListener(async (message) => {
     console.log('Message:', message);
-
     const { TwitterPostId, TwitterImageId, TwitterVideoSrc } = message;
-    processCall(TwitterPostId, TwitterImageId, TwitterVideoSrc);
+    
+    await saveMetadataToLocalDB(TwitterPostId);
+    await processCall(TwitterPostId, TwitterImageId, TwitterVideoSrc);
 });
 
 async function processCall(twitterPostId, twitterImageId, twitterVideoSrc) {
@@ -109,7 +110,7 @@ async function processCall(twitterPostId, twitterImageId, twitterVideoSrc) {
 
 /** 
  * Find the link to the tweet.
- * @returns {string | null} - The id of the tweet.
+ * @returns {Promise<string | null>} - The id of the tweet.
 */
 async function getTweetIdFromPage() {
     const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
@@ -142,7 +143,7 @@ async function getTweetMetadata(tweetId, videoTrumbnail = null) {
     const url = new URL(`${TwitterAPI}/${tweetId}`);
     const response = await fetch(url);
 
-    /**  @type {TwitterPostMetadata} */
+    /** @type {TwitterPostMetadata} */
     const data = await response.json();
 
     // extract tweet metadata
@@ -172,6 +173,18 @@ async function getTweetMetadata(tweetId, videoTrumbnail = null) {
 }
 
 /**
+ * Return typed metadata of the tweet.
+ * @param {string} tweetId
+ * @returns {Promise<TwitterPostMetadata>} 
+ */
+async function getRawTweetMetadata(tweetId) {
+    const url = new URL(`${TwitterAPI}/${tweetId}`);
+    const response = await fetch(url);
+
+    return response.json();
+}
+
+/**
  * Get formatted date.
  * @param {number} data - The date of the tweet.
  * @returns {string} - The formatted date of the tweet. 
@@ -190,15 +203,29 @@ function getFormatedDate(rawData) {
 }
 
 /** 
-    * Get the token from the tweet id.
-    * @param {string} tweetId The ID of the tweet.
-    * @returns {string} The token of the tweet.
-    * @property {string} token The token of the tweet.
+ * @param {string} TwitterPostId
+ * @param {string} TwitterImageId
+ * @param {string} TwitterVideoSrc
 */
-function getToken(tweetId) {
-    return ((Number(tweetId) / 1e15) * Math.PI)
-        .toString(6 ** 2)
-        .replace(/(0+|\.)/g, '')
+async function saveMetadataToLocalDB(TwitterPostId) {
+    // save the metadata to the local storage
+    const metadata = await getRawTweetMetadata(TwitterPostId);
+    if (!metadata) return;
+
+    const rawDoc = await chrome.storage.local.get(['savedTweets']);
+    if (!rawDoc.savedTweets) {
+        await chrome.storage.local.set({ 'savedTweets': JSON.stringify({ savedTweets: [metadata] }) });
+        return;
+    }
+    
+    /** @type {SavedTweets} - Format we store saved posts */
+    const rawSavedTweets = JSON.parse(rawDoc.savedTweets);
+
+    /** @type {Array<SavedTweets>} */
+    const savedTweets = rawSavedTweets.savedTweets;
+    savedTweets.push(metadata);
+
+    await chrome.storage.local.set({ 'savedTweets': JSON.stringify({ savedTweets }) });
 }
 
 /** 
@@ -211,3 +238,78 @@ function getToken(tweetId) {
  * @property {string[]} tweetVideos
  * @property {string} tweetDate
  */
+
+// definition of the tweet metadata in JSdoc format
+/**
+ * @typedef {object} TwitterPostMetadata
+ * @property {number} code
+ * @property {string} message
+ * @property {object} tweet
+ * @property {string} tweet.url
+ * @property {string} tweet.id
+ * @property {string} tweet.text
+ * @property {object} tweet.author
+ * @property {string} tweet.author.id
+ * @property {string} tweet.author.name
+ * @property {string} tweet.author.screen_name
+ * @property {string} tweet.author.avatar_url
+ * @property {string} tweet.author.banner_url
+ * @property {string} tweet.author.description
+ * @property {string} tweet.author.location
+ * @property {string} tweet.author.url
+ * @property {number} tweet.author.followers
+ * @property {number} tweet.author.following
+ * @property {string} tweet.author.joined
+ * @property {number} tweet.author.likes
+ * @property {object} tweet.author.website
+ * @property {string} tweet.author.website.url
+ * @property {string} tweet.author.website.display_url
+ * @property {number} tweet.author.tweets
+ * @property {null} tweet.author.avatar_color
+ * @property {number} tweet.replies
+ * @property {number} tweet.retweets
+ * @property {number} tweet.likes
+ * @property {string} tweet.created_at
+ * @property {number} tweet.created_timestamp
+ * @property {boolean} tweet.possibly_sensitive
+ * @property {number} tweet.views
+ * @property {boolean} tweet.is_note_tweet
+ * @property {null} tweet.community_note
+ * @property {string} tweet.lang
+ * @property {null} tweet.replying_to
+ * @property {null} tweet.replying_to_status
+ * @property {object} tweet.media
+ * @property {object[]} tweet.media.all
+ * @property {string} tweet.media.all.url
+ * @property {string} tweet.media.all.thumbnail_url
+ * @property {number} tweet.media.all.duration
+ * @property {number} tweet.media.all.width
+ * @property {number} tweet.media.all.height
+ * @property {string} tweet.media.all.format
+ * @property {string} tweet.media.all.type
+ * @property {object[]} tweet.media.all.variants
+ * @property {string} tweet.media.all.variants.content_type
+ * @property {string} tweet.media.all.variants.url
+ * @property {number} tweet.media.all.variants.bitrate
+ * @property {object[]} tweet.media.videos
+ * @property {string} tweet.media.videos.url
+ * @property {string} tweet.media.videos.thumbnail_url
+ * @property {number} tweet.media.videos.duration
+ * @property {number} tweet.media.videos.width
+ * @property {number} tweet.media.videos.height
+ * @property {string} tweet.media.videos.format
+ * @property {string} tweet.media.videos.type
+ * @property {object[]} tweet.media.videos.variants
+ * @property {string} tweet.media.videos.variants.content_type
+ * @property {string} tweet.media.videos.variants.url
+ * @property {number} tweet.media.videos.variants.bitrate
+ * @property {string} tweet.source
+ * @property {string} tweet.twitter_card
+ * @property {null} tweet.color
+ */
+
+// definition of the saved tweets in the local storage
+/**
+ * @typedef {object} SavedTweets
+ * @property {Array<TwitterPostMetadata>} StoredTweets
+*/
