@@ -1,5 +1,4 @@
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
-import './build.css'
 // import { useState } from 'react';
 
 const queryClient = new QueryClient();
@@ -16,10 +15,9 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className='text-purple-900 text-lg'>
-        123213312321321312321321321132
+      <div className='min-w-[320px] min-h-screen bg-[#1a1a1a] text-white flex flex-col items-center justify-center font-display p-1'>
+        <Content />
       </div>
-      <Content />
     </QueryClientProvider>
   )
 }

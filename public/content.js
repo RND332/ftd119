@@ -24,6 +24,7 @@ document.addEventListener('mousemove', function (event) {
         // in case user hovers over the specific image in the tweet
         // we just go up of the DOM until we find the <a> tag with the link to the tweet AND image id
         let element = event.target;
+        console.log(element);
         while (element.tagName !== 'A') {
             element = element.parentElement;
         }
