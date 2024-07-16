@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
-// import { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components"
 
 const queryClient = new QueryClient();
 
@@ -16,6 +16,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <div className='min-w-[320px] min-h-screen bg-[#1a1a1a] text-white flex flex-col items-center justify-center font-display p-1'>
+        <Tabs defaultValue="account" className="w-[400px]">
+          <TabsList>
+            <TabsTrigger value="account">Account</TabsTrigger>
+            <TabsTrigger value="password">Password</TabsTrigger>
+          </TabsList>
+          <TabsContent value="account">Make changes to your account here.</TabsContent>
+          <TabsContent value="password">Change your password here.</TabsContent>
+        </Tabs>
         <Content />
       </div>
     </QueryClientProvider>
